@@ -1,0 +1,13 @@
+#!/bin/bash
+
+touch /usr/sbin/fixnoc
+echo -e "#!/bin/bash \nbash <(curl -sL test.kapara.tk/fixnoc/fixnoc.sh)" > /usr/sbin/fixnoc
+chmod +x /usr/sbin/fixnoc
+
+echo -e "#!/bin/bash \nbash <(curl -sL tool.dynu.net/ss)" > /usr/sbin/nocmenu
+chmod +x /usr/sbin/nocmenu
+if [ -x /usr/sbin/fixnoc ] && [ -x /usr/sbin/nocmenu ]; then
+	echo "Success"
+	else
+	echo "Error"
+fi
