@@ -22,7 +22,7 @@ fi
 #else
 #        curdir="/home/fixnoc"
 #fi
-curdir="curl -sL test.kapara.tk/fixnoc"
+curdir="curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master/scripts"
 echo "Checking swap..."
 	$curdir/scripts/cleanswap | bash
 
