@@ -1,6 +1,6 @@
 #!/bin/bash
 # set -x
-
+# Hello man
 # Checking version to install jq
 if [[ `uname -a | awk '{print $1}'` =~ .*FreeBSD.* ]];then
         echo Found FreeBSD installation.
