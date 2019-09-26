@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# set -x
+
+warn=$( cat /etc/nagios/nsca | grep 'nsca_check_disk "$curDir/plugins/check_disk' | awk '{print $6}' )
+disk_perc=$( df / | grep /dev | awk '{print 100-$5}' )
+disk_before=$( df -m / |grep /dev | awk '{print $4}' )
+
+echo "Current Disk Empty Space - $(tput setaf 2)"$disk_perc"%$(tput sgr 0) | Warning On$(tput setaf 1) "$warn"$(tput sgr 0)"
+
+logs=($(find /var/log -mount -maxdepth 1 -type f | grep "syslog*\|error.lo*\|mail?*\|access.lo?*\|chkservd?*\|exim_mainlo?*"))
+logs+=($(find /var/log/nginx -mount -maxdepth 1 -type f 2>/dev/null | grep "access.lo?*\|error.lo?*"))
+logs+=($(find /var/log/apache* -mount -maxdepth 1 -type f 2>/dev/null | grep "suphp_lo?*\|error.lo?*\|access.lo?*\|modsec_audi?*"))
+logs+=($(find /var/log/httpd* -mount -maxdepth 1 -type f 2>/dev/null | grep "access.lo?*.?*\|error.lo?*"))
+logs+=($(find /home/*/public_html -maxdepth 1 -type f -name "*error_log*" 2>/dev/null))
+
+for i in ${!logs[@]}
+        do
+                >"${logs[$i]}"
+                echo Log Was Cleared -- "${logs[$i]}"
+        done
+
+disk_perc=$( df / | grep /dev | awk '{print 100-$5}' )
+disk_after=$( df -m / | grep /dev | awk '{print $4}' )
+cleared=$(($disk_after-$disk_before))
+
+echo "Was Cleared "$cleared"M"
+echo "Current Disk Empty Space - $(tput setaf 2)"$disk_perc"%$(tput sgr 0) | Warning On$(tput setaf 1) "$warn"$(tput sgr 0)"
+
+exit

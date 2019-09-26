@@ -1,0 +1,5 @@
+#
+
+mount -o remount,rw *root partition*
+
+#

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Debug
+# set -x
+
+swap=$(free -k | grep "Swap" |  awk '{print $3}')
+mem=$(free -k | grep "Mem" |  awk '{print $4}')
+swapp=$(cat /proc/sys/vm/swappiness)
+
+if [ $mem -ge $swap ] ; then
+        swapoff -a && swapon -a
+        echo "Swap has been cleaned"
+else
+        echo "No free memory to restart swap"
+	echo "Showing top-5 swap processes... "
+	grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n5 |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}'
+fi
+
+echo "Swapiness: $swapp"
+exit
+

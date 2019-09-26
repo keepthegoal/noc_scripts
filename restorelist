@@ -1,0 +1,5 @@
+#
+
+/vmfs/volumes/*il*-datastore001/helpers/bin/restore.sh -k *server* 
+
+#

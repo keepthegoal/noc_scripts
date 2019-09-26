@@ -1,0 +1,6 @@
+#!/bin/bash
+
+read -p 'Enter hostname with prefix as so: (e.g. 123456_il-pt_vm_srv.xyz): ' hostname
+echo "${firstString/41428_il-rh_vm_sql5.0404.co.il/$hostname}" > test1
+
+

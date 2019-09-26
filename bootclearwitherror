@@ -1,0 +1,7 @@
+#
+
+uname -r
+
+sudo yum remove linux-image-*VERSION*-{*OLDER VERSIONS*}-server 
+
+#

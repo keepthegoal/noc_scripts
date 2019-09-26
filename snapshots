@@ -1,0 +1,5 @@
+#
+
+Get-VM | where {$_.name -match "Snapshotname"}| Get-Snapshot | Remove-Snapshot 
+
+#
