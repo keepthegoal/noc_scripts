@@ -21,7 +21,9 @@ fi
 
 # output results to terminal
 df -h
+echo ""
 cat /proc/swaps
+echo ""
 cat /proc/meminfo | grep Swap
 
 exit

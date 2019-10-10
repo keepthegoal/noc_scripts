@@ -3,45 +3,39 @@
 # Checking version to install jq
 if [[ `uname -a | awk '{print $1}'` =~ .*FreeBSD.* ]];then
         echo Found FreeBSD installation.
-        if [[ ! -f "/etc/bin/jq" || ! -f "/usr/bin/jq" ]]; then
-		echo Installing jq...
-                echo Installing wget
-                cd /tmp
-                pkg install -y -f wget
-                pkg update -y -f
-                pkg install jq
-                make -C /usr/ports/textproc/jq install clean
-        else
-                echo jq installation found!
-                echo Skipping...
-        fi
+        install_jq="cd /tmp && pkg install -y -f wget && pkg update -y -f && pkg install jq && make -C /usr/ports/textproc/jq install clean"
+        install_at="echo "Not found FreeBSD At installation, maybe later""
 elif [[ `cat /etc/*-release | head -1` =~ .*CentOS.* || `cat /etc/*-release | head -1` =~ .*CloudLinux.* ]]; then
         echo Found CentOS installation.
-        if [[ ! -f "/etc/bin/jq" ]] || [[ ! -f "/usr/bin/jq" ]]; then
-		echo Installing jq...
-                yum install epel-release -y
-                yum install jq -y
-                jq --version
-        else
-                echo jq installation found!
-                echo Skipping...
-        fi
+        install_jq="yum install epel-release -y && yum install jq -y"
+        install_at="yum install at -y"
 elif [[ `cat /etc/*-release | head -1` =~ .*Ubuntu.* ]] || [[ `cat /etc/*-release | head -1` =~ .*Debian.* ]] || [[ `cat /proc/version` =~ .*Debian.* ]]; then
         echo Found Ubuntu/Debian installation.
-        if [[ ! -f "/etc/bin/jq" || ! -f "/usr/bin/jq" ]]; then
-		echo Installing jq...
-                echo Installing apt-get install....
-                sudo apt-get install jq
-        else
-                echo jq installation found!
-                echo Skipping...
-        fi
+        install_jq="apt-get install jq -y"
+        install_at="apt-get install at -y"
 else
         echo No known Linux installation found.
         echo Exiting...
         exit
 fi
-
+if [[ ! -f "/etc/bin/jq" ]] && [[ ! -f "/usr/bin/jq" ]]; then
+        echo Installing jq...
+        install_jq () {
+        $install_jq
+        }
+        install_jq
+else
+        echo jq installation found!
+        echo Skipping...
+fi
+if [[ ! -e /usr/sbin/csf ]] && [[ ! -f "/etc/bin/at" ]] && [[ ! -f "/usr/bin/at" ]]; then
+        echo Installing at...
+        install_at () {
+        $install_at
+        }
+        install_at
+        sudo atd && atd -f
+fi
 #Time from last check
 
 if [ ! -f /etc/abuse_last_check ] ; then
@@ -132,22 +126,20 @@ if [[ -n "${!bot_ip[@]}" ]]; then
 		esac
         	for i in ${!bot_ip[@]}
                 do
-#			echo "${bot_ip[$i]}">>/etc/abuse_last_check
+			echo "${bot_ip[$i]}">>/etc/abuse_last_check
 			if [ -e /usr/sbin/csf ]; then
 				2>/dev/null 1>&2 csf -td ${bot_ip[$i]} "$time"h
-				echo "${bot_ip[$i]}">>/etc/abuse_last_check
 				echo "IP ${bot_ip[$i]} was added to csf.deny for "$time" hours"
-			else
-				echo "BotBlock_Plugin for IPTABLES temporarily unavailable"
-#				iptables -I INPUT -s ${bot_ip[$i]} -j DROP && \
-#				echo "iptables -D INPUT -s ${bot_ip[$i]} -j DROP" | at now + 2 minutes
-#				echo "IP ${bot_ip[$i]} was added to iptables for "$time" hours"
-			fi
-		done;;
-	esac
+                        else
+                                iptables -I INPUT -s ${bot_ip[$i]} -j DROP && \
+                                echo "iptables -D INPUT -s ${bot_ip[$i]} -j DROP" | at now + "$time" hour 2>/dev/null
+                                echo "IP ${bot_ip[$i]} was added to iptables for "$time" hours"
+                        fi
+                done;;
+        esac
 fi
 if [ -e /usr/sbin/csf ];then
-	2>/dev/null 1>&2 csf -r
+        2>/dev/null 1>&2 csf -r
         echo "CSF has been restarted"
 fi
 echo "Completed"

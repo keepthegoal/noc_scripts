@@ -1,17 +1,12 @@
 #!/bin/bash
 # set -x
 
-read -p 'Do you wanna see all processes? (default - 15)' choise 
+read -p 'Do you wanna see all processes? (default - 15) : ' choise 
 
 echo
 
 case "$choise" in 
-1) lines=1 ;; 
-2) lines=2 ;;
-3) lines=3 ;;
-4) lines=4 ;;
-5) lines=5 ;;
-10) lines=10 ;;
+[y/Y]) lines=1000 ;; 
 *) lines=15 ;; 
 esac 
 

@@ -11,9 +11,7 @@ if [ $mem -ge $swap ] ; then
         swapoff -a && swapon -a
         echo "Swap has been cleaned"
 else
-        echo "No free memory to restart swap"
-	echo "Showing top-5 swap processes... "
-	grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n5 |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}'
+echo "No free memory to restart swap"
 fi
 
 echo "Swapiness: $swapp"

@@ -1,0 +1,20 @@
+#!/bin/sh
+
+#set -x
+
+echo "
+[1]  = $(tput setaf 1)TURN OFF MESSAGES$(tput sgr 0)
+[2]  = $(tput setaf 2)TURN ON MESSAGES$(tput sgr 0)
+$(tput sgr 0)
+"
+read -p "Enter number : " id
+
+case "$id" in
+ 1)  sudo dmesg -n 2 ;;
+ 2)  sudo dmesg -n 7 ;;
+
+esac
+
+exit
+
+

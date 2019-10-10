@@ -1,9 +1,0 @@
-# Insert number of VM instead of 000
-
-Alert - trash/ more than 30 days
-find /vmfs/volumes/vm000:storage1/trash/ -type d -mindepth 1 -mtime +10 -exec rm -r 2>/dev/null {} \;
-#Removing directories more than 7 days in /trash
-
-Alert - Less than 400Gb
-cd /vmfs/volumes/vm000:storage1/trash/ && du -shx * && cd /vmfs/volumes/vm000:storage1/trash/ && rm -r * && cd /vmfs/volumes/vm000:storage1/ && du -sh trash/ && df -h | grep storage1 | awk '{print "Free space on storage1 - ",$4}'
-#Clearing /trash and showing free space in storage1

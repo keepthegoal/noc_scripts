@@ -16,9 +16,16 @@ logs+=($(find /home/*/public_html -maxdepth 1 -type f -name "*error[_.]log*" 2>/
 
 for i in ${!logs[@]}
         do
-                >"${logs[$i]}"
-                echo Log Was Cleared -- "${logs[$i]}"
+                logsize=$(wc -c "${logs[$i]}" | awk '{print $1/2^20}')
+				logsize=$(printf "%0.1f\n" $logsize)
+				>"${logs[$i]}"
+                echo "Log Was Cleared -- "$logsize" MB -- "${logs[$i]}""
         done
+
+if [[ `cat /etc/*-release | head -1` =~ .*CentOS.* || `cat /etc/*-release | head -1` =~ .*CloudLinux.* ]]; then
+        2>/dev/null 1>&2 yum clean all
+        echo Yum Cache Has Been Cleared
+fi
 
 disk_perc=$( df / | grep /dev | awk '{print 100-$5}' )
 disk_after=$( df -m / | grep /dev | awk '{print $4}' )
