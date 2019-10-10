@@ -3,10 +3,9 @@
 # Debug
 # set -x
 
-# Example of using scripts
-# $curdir/scripts/abuse
 disk=$(df / | grep /dev | awk '{print $5-0}')
 boot=$(df -h | grep boot | awk '{print $5-0}')
+
 #Checking connections from web servers
 http=$( netstat -anp |grep -w 'tcp\|udp' | awk '{print $5}' | cut -d: -f1 | sort | uniq | sort -n | wc -l )
 
@@ -17,11 +16,6 @@ if [[ `cat /etc/*-release | head -1` =~ .*CentOS.* || `cat /etc/*-release | head
         ssh=$(journalctl -u ssh.service -r -n 200 2>/dev/null| egrep "Failed|Failure" | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort | uniq | sort -n | wc -l) 
 fi
 
-#if [ -d "/etc/nagios/" ] ; then
-#        curdir="/etc/nagios/fixnoc"
-#else
-#        curdir="/home/fixnoc"
-#fi
 curdir="curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master"
 echo "Checking swap..."
 	$curdir/scripts/cleanswap | bash
@@ -58,12 +52,6 @@ echo "Checking boot..."
 echo "Checking disk..."
         if [ $disk -ge 90 ] ; then
 		$curdir/scripts/findbig
-	fi
-
-echo "Checking SMTP..."
-	if [ -x /etc/exim/delay_unknown_hosts ] ; then 
-		/etc/exim/delay_unknown_hosts
-	else echo "exim not found..."
 	fi
 
 echo "Checking http/s connections..."

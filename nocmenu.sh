@@ -26,6 +26,7 @@ echo "
 [20] = Install Fixnoc Plugin $(tput setaf 1){RUN}$(tput sgr 0)
 $(tput sgr 0)
 "
+
 read -p "Enter number : " id
 echo
 echo "Starting..."

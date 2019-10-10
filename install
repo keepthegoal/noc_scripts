@@ -4,6 +4,7 @@ touch /usr/sbin/fixnoc
 echo -e "#!/bin/bash \nbash <(curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master/fixnoc.sh)" > /usr/sbin/fixnoc
 chmod +x /usr/sbin/fixnoc
 
+touch /usr/sbin/nocmenu
 echo -e "#!/bin/bash \nbash <(curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master/nocmenu.sh)" > /usr/sbin/nocmenu
 chmod +x /usr/sbin/nocmenu
 if [ -x /usr/sbin/fixnoc ] && [ -x /usr/sbin/nocmenu ]; then
