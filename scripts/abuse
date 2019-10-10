@@ -1,0 +1,154 @@
+#!/bin/bash
+#set -x
+# Checking version to install jq
+if [[ `uname -a | awk '{print $1}'` =~ .*FreeBSD.* ]];then
+        echo Found FreeBSD installation.
+        echo Installing jq...
+        if [ ! -f "/etc/bin/jq" ]; then
+                echo Installing wget
+                cd /tmp
+                pkg install -y -f wget
+                pkg update -y -f
+                pkg install jq
+                make -C /usr/ports/textproc/jq install clean
+        else
+                echo jq installation found!
+                echo Skipping...
+        fi
+elif [[ `cat /etc/*-release | head -1` =~ .*CentOS.* || `cat /etc/*-release | head -1` =~ .*CloudLinux.* ]]; then
+        echo Found CentOS installation.
+        echo Installing jq...
+        if [ ! -f "/etc/bin/jq" ]; then
+                yum install epel-release -y
+                yum install jq -y
+                jq --version
+        else
+                echo jq installation found!
+                echo Skipping...
+        fi
+elif [[ `cat /etc/*-release | head -1` =~ .*Ubuntu.* ]] || [[ `cat /etc/*-release | head -1` =~ .*Debian.* ]] || [[ `cat /proc/version` =~ .*Debian.* ]]; then
+        echo Found Ubuntu/Debian installation.
+        echo Installing jq...
+        if [ ! -f "/etc/bin/jq" ]; then
+                echo Installing apt-get install....
+                sudo apt-get install jq
+        else
+                echo jq installation found!
+                echo Skipping...
+        fi
+else
+        echo No known Linux installation found.
+        echo Exiting...
+        exit
+fi
+
+#Time from last check
+
+if [ ! -f /etc/abuse_last_check ] ; then
+        echo "$(date +%s)"  > /etc/abuse_last_check
+elif [ "$(( $(date +%s) - $(head -n 1 /etc/abuse_last_check) ))" -gt 1800 ] ; then       #1200 = 20min  1800 = 30min
+        echo "$(date +%s)"  > /etc/abuse_last_check
+fi
+
+# Take IP list
+grepp='\([2][5][0-5]\|[2][0-4][0-9]\|[1][0-9][0-9]\|[1-9][0-9]\|[1-9]\)\.\(25[0-5]\|2[0-4][0-9]\|[1][0-9][0-9]\|[1-9][0-9]\|[0-9]\)\.\(25[0-5]\|2[0-4][0-9]\|[1][0-9][0-9]\|[1-9][0-9]\|[0-9]\)\.\(25[0-5]\|2[0-4][0-9]\|[1][0-9][0-9]\|[1-9][0-9]\|[1-9]\)'
+
+ip_list=($(netstat -anp | grep -o "$grepp" | cut -d: -f1 | sort | uniq | sort -n) \
+$(journalctl -u ssh*.service -r -n 75 2>/dev/null | egrep "Failed|Failure" | grep -o "$grepp" | sort | uniq | sort -n) \
+$(tail -75 /var/log/nginx/access[_.]log 2>/dev/null | grep -o "$grepp" | sort | uniq | sort -n) \
+$(tail -75 /var/log/apache2/access[_.]log 2>/dev/null | grep -o "$grepp" | sort | uniq | sort -n) \
+$(tail -75 /var/log/apache/access[_.]log 2>/dev/null | grep -o "$grepp" | sort | uniq | sort -n) \
+$(tail -75 /var/log/httpd/access[_.]log 2>/dev/null | grep -o "$grepp" | sort | uniq | sort -n))
+
+# Api Keys List
+KEYS=(c36378bd1532f9d99dcea56fcd49d24529edc2ab5ec9f9643ef6a152bc5a2c2c55315dd8ce54e977 \
+ce97267cf198c937be64fc33407f2d8d87430c3ae9aab25db5858d314d7648710dd4a841482827d7 \
+7fae7a4928f3fb8babb2a6af63d91c7c4ead7c08941d84adca042361c42a80ef47458eb02924b950 \
+f62ea64e6f42b6ab34c8412f396cdc7082de450828178ddb1c580bc5fc03796d7c2d14264d4cd945 \
+210da5fc169ae769a3989fcd7f13d99b74de875c3b0d0fb45ae5b3eebfe4736e6d8c2604cce14c1e)
+key_num=0
+
+# Function of checking IP by Abuse IP
+function check_ip {
+       curl -G -s https://api.abuseipdb.com/api/v2/check \
+         --data-urlencode "ipAddress=${ip_list[$i]}" \
+         -d maxAgeInDays=2 \
+         -d verbose \
+         -H "Key: ${KEYS[key_num]}" \
+         -H "Accept: application/json"
+        }
+for i in ${!ip_list[@]}
+do
+	printf '=%.0s' {1..40}
+		if grep -q "${ip_list[$i]}" /etc/abuse_last_check ; then		#If this IP was checked in last 20 minutes
+			printf "\nIP ${ip_list[$i]} has been checked yet\n"
+		else
+			printf "\nChecking ${ip_list[$i]} ...\n"
+			check=$(check_ip)
+			confidence=`echo $check | jq .data.abuseConfidenceScore `
+				while [ "$confidence" == "null" ] && [ $key_num -lt "${#KEYS[@]}" ] #Accounts rotation check
+				do
+					echo "$(tput setaf 1)Switching to next API key$(tput sgr 0)"
+					key_num=$(( $key_num + 1 ))
+					check=$(check_ip)
+					confidence=`echo $check | jq .data.abuseConfidenceScore `
+				done
+				if [ "$confidence" == "null" ] ; then #Fail of rotation(no more accounts)
+					echo "Accounts for script ended =( "
+					break
+				fi
+			domain=`echo $check | jq .data.domain `
+			country=`echo $check | jq .data.countryName `
+			use_type=`echo $check | jq .data.usageType `
+			echo "This IP have $(tput bold)$confidence$(tput sgr 0) confidence of abuse"
+			if  [[ $use_type = '"Search Engine Spider"' ]] ; then		#Writing bot list
+				echo "$use_type" by "$domain"
+				bot_ip+=(${ip_list[$i]})
+			else
+				echo "${ip_list[$i]}">>/etc/abuse_last_check		#Writing to list of checked IP's
+				if [[ $confidence -ge 30 ]] && [[ $domain != '"cloudflare.com"' ]] ; then
+					echo "Attack from "$country""
+						if [ -e /usr/sbin/csf ] ; then
+							2>/dev/null 1>&2 csf -d ${ip_list[$i]}
+							echo "IP ${ip_list[$i]} was added to csf.deny"
+						else
+							2>/dev/null 1>&2 iptables -A INPUT -s ${ip_list[$i]} -j DROP
+							echo "IP ${ip_list[$i]} was added to iptables"
+						fi
+				fi
+			fi
+		fi
+done
+if [[ -n "${!bot_ip[@]}" ]]; then
+	read -p "If you want to temporary block "${#bot_ip[@]}" bots? [y/n] : " id		#Temp block bots?
+	echo
+	case "$id" in
+	[y/Y])
+		read -p "For which time period you want to block them?(default-2h) Hours: " idd          #Temp block bots?
+        	echo
+		case "$idd" in
+        	[1-9]*) time=$idd;;
+		*)	time=2;;
+		esac
+        	for i in ${!bot_ip[@]}
+                do
+#			echo "${bot_ip[$i]}">>/etc/abuse_last_check
+			if [ -e /usr/sbin/csf ]; then
+				2>/dev/null 1>&2 csf -td ${bot_ip[$i]} "$time"h
+				echo "${bot_ip[$i]}">>/etc/abuse_last_check
+				echo "IP ${bot_ip[$i]} was added to csf.deny for "$time" hours"
+			else
+				echo "BotBlock_Plugin for IPTABLES temporarily unavailable"
+#				iptables -I INPUT -s ${bot_ip[$i]} -j DROP && \
+#				echo "iptables -D INPUT -s ${bot_ip[$i]} -j DROP" | at now + 2 minutes
+#				echo "IP ${bot_ip[$i]} was added to iptables for "$time" hours"
+			fi
+		done;;
+	esac
+fi
+if [ -e /usr/sbin/csf ];then
+	2>/dev/null 1>&2 csf -r
+        echo "CSF has been restarted"
+fi
+echo "Completed"
+exit
