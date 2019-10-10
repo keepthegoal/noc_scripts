@@ -1,9 +1,0 @@
-#!/bin/sh
-
-#set -x
-
-read -p "Enter client ID : " id
-value=$(($id*$id+36))
-echo OmcF2$value
-exit
-
