@@ -46,11 +46,10 @@ case "$id" in
 14) $curdir/vmalertrestart ;;
 15) $curdir/readonlyrepair ;;
 16) $curdir/bootclearwitherror ;;
-17) $curdir/swapadd | bash ;;
+17) echo "Pusto nahui" ;;
 18) $curdir/swapadd | bash ;;
 19) $curdir/swaprm | bash ;;
-20) bash<(curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master/install) ;;
+20) curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master/install | bash ;;
 esac
 echo "Ending..."
 exit
-
