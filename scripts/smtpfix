@@ -1,6 +1,0 @@
-# /etc/exim/delay_unknown_hosts
-
-sed -i '0,/delay = 20s/s//delay = 5s/' /etc/exim.conf
-sed -i 's/77.247.180.45//g' /etc/skipsmtpcheckhosts
-service exim restart
-
