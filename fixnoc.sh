@@ -2,7 +2,7 @@
 
 # Debug
 # set -x
-
+curdir="curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master"
 disk=$(df / | grep /dev | awk '{print $5-0}')
 boot=$(df -h | grep boot | awk '{print $5-0}')
 
@@ -13,29 +13,30 @@ http=$( netstat -anp |grep -w 'tcp\|udp' | awk '{print $5}' | cut -d: -f1 | sort
 if [[ `cat /etc/*-release | head -1` =~ .*CentOS.* || `cat /etc/*-release | head -1` =~ .*CloudLinux.* ]]; then
         ssh=$(journalctl -u sshd.service -r -n 200 2>/dev/null | egrep "Failed|Failure" | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort | uniq | sort -n | wc -l)
 	else
-        ssh=$(journalctl -u ssh.service -r -n 200 2>/dev/null| egrep "Failed|Failure" | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort | uniq | sort -n | wc -l) 
+        ssh=$(journalctl -u ssh.service -r -n 200 2>/dev/null| egrep "Failed|Failure" | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | sort | uniq | sort -n | wc -l)
 fi
 
-curdir="curl -sL raw.githubusercontent.com/keepthegoal/noc_scripts/master"
+check_disk () {
+	echo "Checking disk..."
+	        if [ $disk -ge 90 ] ; then
+                read -p 'Press Y/y to clean logs ' ans
+                echo
+                        case "$ans" in
+                                [y/Y])  $curdir/scripts/emptylogs | bash;;
+                                *) break ;;
+                        esac
+        else echo "Disk is OK"
+        fi
+	disk=
+	disk=$(df / | grep /dev | awk '{print $5-0}')
+        	if [ $disk -ge 90 ] ; then
+                	echo "Your disk still full, checking for big files..." && $curdir/scripts/findbig | bash
+	        else echo "Continue checking..."
+        	fi
+	}
+
 echo "Checking swap..."
 	$curdir/scripts/cleanswap | bash
-
-echo "Checking disk..."
-	if [ $disk -ge 90 ] ; then 
-		read -p 'Press Y/y to clean logs ' ans
-		echo
-			case "$ans" in
-				[y/Y])  $curdir/scripts/emptylogs | bash;;
-				*) break ;;
-			esac
-	else echo "Disk is OK"
-	fi
-
-disk=$(df / | grep /dev | awk '{print $5-0}')
-        if [ $disk -ge 90 ] ; then
-                echo "Your disk still full, checking for big files..." && $curdir/scripts/findbig | bash
-	else echo "Continue checking..."
-        fi
 
 echo "Checking boot..."
 	if [ ! -z $boot ] && [ $boot -ge 90 ] ; then

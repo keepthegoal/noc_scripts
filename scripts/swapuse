@@ -1,16 +1,22 @@
 #!/bin/bash
-# set -x
+ set -x
 
 read -p 'Do you wanna see all processes? (default - 15) : ' choise 
 
 echo
-
 case "$choise" in
 [y/Y]) lines=1000 ;;
 *) lines=15 ;;
 esac
 
 grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n$lines |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}'
+mysql=$(grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n1 |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}' | grep -a 'mysql') 
+
+if [[ -n $mysql ]] ; then
+	echo "Pizdetz"
+	else echo "Nishtyak"
+fi
+
 
 echo "$(tput bold)Swappiness = "$(cat /proc/sys/vm/swappiness)"$(tput sgr 0)"
 

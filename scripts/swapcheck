@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Debug
+# set -x
+
+swap=$(free -b | grep "Swap" |  awk '{print $3}')
+mem=$(free -b | grep "Mem" |  awk '{print $4}')
+
+mysqltuner ()
+                {
+			wget http://mysqltuner.pl/ -O mysqltuner.pl
+			wget https://raw.githubusercontent.com/major/MySQLTuner-perl/master/basic_passwords.txt -O basic_passwords.txt
+			wget https://raw.githubusercontent.com/major/MySQLTuner-perl/master/vulnerabilities.csv -O vulnerabilities.csv
+			perl mysqltuner.pl
+                }
+
+swapuse ()
+		{
+		read -p 'Do you wanna see all processes? (default - 15) : ' choise
+		echo
+			case "$choise" in
+				[y/Y]) lines=20 ;;
+				1) lines=1 ;;
+				2) lines=2 ;;
+				3) lines=3 ;;
+				4) lines=4 ;;
+				5) lines=5 ;;
+				10) lines=10 ;;
+				*) lines=15 ;;
+			esac
+#		choise=
+		grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n$lines |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}'
+		}
+
+mysql=$(grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n1 |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}' | grep -a 'mysql')
+apache=$(grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n10 |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}' | egrep -a 'apache|httpd' | wc -l)
+
+
+if [[ -n $mysql ]] ; then
+	read -p 'Press y/Y to run MySQL tuner ' choise
+                echo
+                        case "$choise" in
+                        [y/Y]) mysqltuner ;;
+                        *) echo "Cancelled" ;;
+                	esac
+        else echo "No MySQL tuner needed"
+fi
+
+if [[ $apache -ge 5 ]] ; then
+	        read -p 'Press y/Y to run Apache tuner ' choise
+                echo
+                        case "$choise" in
+                        [y/Y]) curl -sL https://raw.githubusercontent.com/richardforth/apache2buddy/master/apache2buddy.pl | sudo perl ;;
+                        *) echo "Cancelled" ;;
+                        esac
+        else echo "No Apache tuner needed"
+fi
+
+swapp=$(cat /proc/sys/vm/swappiness)
+
+if [ $mem -ge $swap ] ; then
+        swapoff -a && swapon -a
+        echo "Swap has been cleaned"
+else
+	swapuse
+fi
+
+echo "Swapiness: $swapp"
+exit
