@@ -35,7 +35,6 @@ swapuse ()
 mysql=$(grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n1 |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}' | grep -a 'mysql')
 apache=$(grep VmSwap /proc/*/status 2>/dev/null | sort -nk2 | tail -n10 |awk -F'/' '{cmd="cat /proc/" $3 "/cmdline"; cmd|getline var; close (cmd); printf $0 "\t"; print var}' |awk '{printf $2/1024 " MB" "\t";print $1 "\t\t" $4}' | egrep -a 'apache|httpd' | wc -l)
 
-
 if [[ -n $mysql ]] ; then
 	read -p 'Press y/Y to run MySQL tuner ' choise
                 echo
